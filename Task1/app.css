@@ -1,0 +1,214 @@
+* {
+    box-sizing: border-box;
+}
+
+body {
+    height: 100vh;
+    display: flex;
+    align-content: center;
+    justify-content: space-around;
+    align-items: center;
+}
+
+@media (max-width: 1320px) {
+
+    body {
+        flex-direction: column;
+    }
+}
+
+#controls {
+    border: 1px solid black;
+    display: flex;
+    flex-direction: column;
+    /* align-items: center; */
+    padding: 10px;
+}
+
+#controls h2{
+    text-align: center;
+}
+
+#rotate-box {
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
+    /* padding: 5px; */
+}
+
+.rotate {
+    border: 1px solid black;
+    border-radius: 10%;
+    margin: 10px 5px;
+    text-align: center;
+
+}
+
+.rotate img {
+    width: 85%;
+    height: 85%;
+}
+
+.left {
+    background-color: #04d1b2;
+}
+
+.left-hover:hover {
+    background-color: #00c4a7;
+
+}
+
+.right {
+    background-color: #3298dc;
+}
+
+.right-hover:hover {
+    background-color: #2793da;
+}
+
+.left-blocked{
+    cursor: not-allowed;
+    background-color: #9fe8d9;
+}
+
+.right-blocked{
+    cursor: not-allowed;
+    background-color: #9fcbed;
+}
+
+#container {
+    border: 2px solid black;
+    max-width: 960px;
+    max-height: 960px;
+    transition: transform 0.1s ease-in-out 2.5s; /*Container rotation original: .45s*/
+}
+
+.tile {
+    width: 12.5%;
+    height: 12.5%;
+    display: inline-block;
+    vertical-align: top;
+
+    /* text-align: center; */
+    /* margin: none;
+    padding: none; */
+}
+
+.dark-tile {
+    background-color: #739552;
+}
+
+.light-tile {
+    background-color: #ebecd0;
+}
+
+.highlighted-dark-tile {
+    background-color: #baca49;
+    border: 2px solid #90e0ef;
+}
+
+.highlighted-light-tile {
+    background-color: #f5f58d;
+    border: 2px solid #90e0ef;
+}
+
+.moveable-tile {
+    background-color: #e63946;
+}
+
+/* Tile marking not implemented*/
+
+/* .tile-marking{
+    width: auto;
+    height: auto;
+    font-size: .9vw;
+    position: relative;
+    bottom:0;
+    right: 0;
+} */
+
+.piece {
+    width: 80%;
+    height: 80%;
+    transform: translate(10%, 10%);
+    border-radius: 15%;
+    transition: transform 0.1s ease-in-out 2.5s; /*piece Rotation original: .45s*/
+}
+
+.piece[alt*="ricochet"]{
+    transition: transform 0.1s ease-in-out;
+}
+
+.red-piece {
+    border: 1px solid red;
+}
+
+.blue-piece {
+    border: 1px solid blue;
+
+}
+
+.ricochet-90 {
+    transform: rotate(90deg) translate(10%, -10%);
+}
+
+.sricochet-90 {
+    transform: rotate(90deg) translate(10%, -10%);
+}
+
+.sricochet-180 {
+    transform: rotate(180deg) translate(-10%, -10%);
+}
+
+.sricochet-270 {
+    transform: rotate(270deg) translate(-10%, 10%);
+}
+
+/*IMPLEMENTING TURN-BASED MOVE:*/
+
+.rotate-container{
+    transform: rotate(180deg);
+}
+
+.rotate-piece{
+    transform: rotate(180deg) translate(-10%, -10%);
+}
+
+.block-piece{
+    cursor: not-allowed;
+}
+
+.blues-turn{
+    color: #3f48cd;
+}
+
+.reds-turn{
+    color: #e63946;
+}
+
+.bullet-container{
+    width: 0px;
+    height: 0px;
+    position: relative;
+    top: 0;
+    left: 36%; /* 50% - 14% (bullet's width') */
+    /* display: flex;
+    align-items: center;
+    justify-content: center; */
+}
+
+.bullet{
+    /* width: 20%;
+    height: 20%; */
+    position: absolute;
+    /* top:0;
+    left: 0; */
+}
+
+.blue-won{
+    color: #3f48cd;
+}
+
+.red-won{
+    color: #e63946;
+}
