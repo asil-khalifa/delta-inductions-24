@@ -5,7 +5,7 @@ let vw, vh, containerWidth;
 let selectedSquare = null;
 
 //Timer variables
-let timeUp = false, timerInitialMinutes = 4, timerInitialSeconds = 0, blueTimerId = null, redTimerId = null;
+let timeUp = false, timerInitialMinutes = 5, timerInitialSeconds = 0, blueTimerId = null, redTimerId = null;
 let centiseconds = { red: 0, blue: 0 }, seconds = { red: timerInitialSeconds, blue: timerInitialSeconds }, minutes = { red: timerInitialMinutes, blue: timerInitialMinutes };
 let blueTimer = document.querySelector('#blue-timer'), redTimer = document.querySelector('#red-timer');
 
@@ -33,12 +33,16 @@ const positions = {
     'ricochetBlue': '',
     'ricochetRed': '',
     'sricochetRed': '',
-    'sricochetBlue': ''
+    'sricochetBlue': '',
+    'ricochet1Blue': '',
+    'ricochet1Red': ''
 }
 
 let rotations = {
     'ricochetRed': 0,
     'ricochetBlue': 0,
+    'ricochet1Red': 0,
+    'ricochet1Blue': 0,
     'sricochetRed': 0,
     'sricochetBlue': 0
 }
@@ -53,6 +57,7 @@ function pieceNameFromId(id) {
 }
 
 function opponentOf(player) {
+    player = player.toLowerCase();
     if (player === 'blue') return 'red';
     else return 'blue';
 }
@@ -120,12 +125,12 @@ function addTiles() {
     }
 }
 
-function createPiece(type) {
+function createPiece(type, Alt = null) {
     let piece = document.createElement('img');
     piece.src = `images/${type}.png`;
-    piece.alt = type;
+    piece.alt = (Alt) ? Alt : type;
     piece.classList.add('piece');
-    if (type.indexOf('ricochet') == -1) {
+    if (type.indexOf('ricochet') === -1) {
         if (type.indexOf('Red') !== -1) piece.classList.add('red-piece');
         else piece.classList.add('blue-piece');
     }
@@ -177,46 +182,118 @@ function destroyPiece(div) {
     }, 500);
 }
 
-function setBoard() {
+function randInt8() {
+    return Math.floor(Math.random() * 8) + 1;
+}
+
+function setBoard(preset = null) {
     let pieces = document.querySelectorAll('.piece'), aPiece;
 
     for (aPiece of pieces) aPiece.remove();
 
-    aPiece = createPiece('tankRed');
-    movePiece(aPiece, 'c7');
-    aPiece = createPiece('tankBlue');
-    movePiece(aPiece, 'c2');
-    aPiece = createPiece('titanBlue');
-    movePiece(aPiece, 'd1');
-    aPiece = createPiece('titanRed');
-    movePiece(aPiece, 'd8');
-    aPiece = createPiece('canonRed');
-    movePiece(aPiece, 'e8');
-    aPiece = createPiece('canonBlue');
-    movePiece(aPiece, 'e1');
-    aPiece = createPiece('ricochetRed');
-    movePiece(aPiece, 'e7');
-    aPiece = createPiece('ricochetBlue');
-    movePiece(aPiece, 'e2');
-    aPiece = createPiece('sricochetRed');
-    movePiece(aPiece, 'd6');
-    aPiece = createPiece('sricochetBlue');
-    movePiece(aPiece, 'd3');
-    rotations['sricochetBlue'] = 180;
-    let temp = document.querySelector('#d3').children[0];
+    // aPiece = createPiece('tankRed');
+    // movePiece(aPiece, 'c7');
+    // aPiece = createPiece('tankBlue');
+    // movePiece(aPiece, 'c2');
+    // aPiece = createPiece('titanBlue');
+    // movePiece(aPiece, 'd1');
+    // aPiece = createPiece('titanRed');
+    // movePiece(aPiece, 'd8');
+    // aPiece = createPiece('canonRed');
+    // movePiece(aPiece, 'e8');
+    // aPiece = createPiece('canonBlue');
+    // movePiece(aPiece, 'e1');
+    // aPiece = createPiece('ricochetRed');
+    // movePiece(aPiece, 'e7');
+    // aPiece = createPiece('ricochetBlue');
+    // movePiece(aPiece, 'e2');
+    // aPiece = createPiece('sricochetRed');
+    // movePiece(aPiece, 'd6');
+    // aPiece = createPiece('sricochetBlue');
+    // movePiece(aPiece, 'd3');
+    // rotations['sricochetBlue'] = 180;
+    // let temp = document.querySelector('#d3').children[0];
+    // temp.classList.add('sricochet-180');
+    // aPiece = createPiece('ricochetRed', 'ricochet1Red');
+    // movePiece(aPiece, 'f6');
+    // aPiece = createPiece('ricochetBlue', 'ricochet1Blue');
+    // movePiece(aPiece, 'f3');
+
+    let setPositions;
+
+    if (preset) {
+        setPositions = preset;
+    }
+
+    else {
+        setPositions = {
+            'titanBlue': '',
+            'titanRed': '',
+            'tankBlue': '',
+            'tankRed': '',
+            'canonBlue': '',
+            'canonRed': '',
+            'ricochetBlue': '',
+            'ricochetRed': '',
+            'sricochetRed': '',
+            'sricochetBlue': '',
+            'ricochet1Blue': '',
+            'ricochet1Red': ''
+        }
+
+        let temp, alphas = 'abcdefgh';
+
+        //Spawning titan and canon in middle
+
+        setPositions['titanBlue'] = alphas[Math.floor(Math.random() * 4) + 2] + '1';
+        setPositions['titanRed'] = setPositions['titanBlue'][0] + '8';
+
+        do {
+            setPositions['canonBlue'] = alphas[Math.floor(Math.random() * 4) + 2] + '1';
+        } while (setPositions['canonBlue'][0] === setPositions['titanBlue'][0]);
+        setPositions['canonRed'] = setPositions['canonBlue'][0] + '8';
+
+        //Spawn tanks columns b to e to increase chance of allowing bullets to go through them
+        setPositions['tankBlue'] = alphas[Math.floor(Math.random() * 4) + 1] + '2';
+        setPositions['tankRed'] = setPositions['tankBlue'][0] + '7';
+
+        //No ricochets in extreme columns
+
+        let blueRicochets = ['ricochetBlue', 'sricochetBlue', 'ricochet1Blue'];
+        for (let x of blueRicochets) {
+            do {
+                temp = alphas[Math.floor(Math.random() * 6) + 1] + String(Math.floor(Math.random() * 2) + 2);
+            } while (Object.values(setPositions).includes(temp));
+            setPositions[x] = temp;
+        }
+
+        let redRicochets = ['ricochetRed', 'sricochetRed', 'ricochet1Red'];
+        for (let i in redRicochets) {
+            let x = redRicochets[i];
+            setPositions[x] = setPositions[blueRicochets[i]][0] + String(9 - parseInt(setPositions[blueRicochets[i]][1]));
+        }
+    }
+
+
+    for (let i in setPositions) {
+        if (i === 'ricochet1Blue') aPiece = createPiece('ricochetBlue', 'ricochet1Blue');
+        else if (i === 'ricochet1Red') aPiece = createPiece('ricochetRed', 'ricochet1Red');
+        else aPiece = createPiece(i);
+        movePiece(aPiece, setPositions[i]);
+    }
+
+    temp = document.querySelector(`#${setPositions['sricochetBlue']}`).children[0];
     temp.classList.add('sricochet-180');
+    rotations['sricochetBlue'] = 180;
 
     turn = 'red';
     noMoves = -1;
-    // for (aPiece of pieces) {
-    //     if (aPiece.alt.indexOf('ricochet') === -1) aPiece.classList.add('rotate-piece');
-    // }
 
     establishTurn(); //Makes it blues turn
-    // console.log('I am herer')
 }
+
 setBoard();
-// console.log('I am here');
+
 resumeTimer('blue');
 
 resetButton.addEventListener('click', () => {
@@ -269,7 +346,8 @@ function handleClick(e) {
         selectedSquare = null;
     }
 
-    if (positionsValues.includes(id && id !== null)) {
+    if (positionsValues.includes(id) && id !== null) {
+
         selectedSquare = divOfId(id);
     }
     else if (e.target.classList.contains('piece')) {
@@ -278,7 +356,6 @@ function handleClick(e) {
     // In both the above 2 cases, This time, the user clicked on a piece
     else {
         //This time user didn't click on a piece
-
         if (ogSquare !== null && e.target.classList.contains('moveable-tile')) {
             //Earlier user clicked on a piece
             movePiece(ogSquare.children[0], e.target.id);
@@ -297,22 +374,22 @@ function handleClick(e) {
     // if (selectedSquare.children[0].alt.toLowerCase().indexOf(turn) === -1 || frozen) {
     //     selectedSquare = null;
     // }
-///IF FROZEN: NULL ALWAYS; ELSE:
-// IF SPECIAL CASE: NO NULL ALWAYS
-// ELSE: IF OUR PIECE, NO NULL ELSE NULL
+    ///IF FROZEN: NULL ALWAYS; ELSE:
+    // IF SPECIAL CASE: NO NULL ALWAYS
+    // ELSE: IF OUR PIECE, NO NULL ELSE NULL
 
-    if(frozen) selectedSquare = null;
-    else if (!specialCase){
+    if (frozen) selectedSquare = null;
+    else if (!specialCase) {
         if (selectedSquare.children[0].alt.toLowerCase().indexOf(turn) === -1) selectedSquare = null;
     }
-    
+
     //User has currently clicked on a piece, but it may not be accepted due to it not being their turn
 
     removeMoveableSquares();
     if (selectedSquare !== null) {
-        let pieceName = (ogSquare!==null)?pieceNameFromId(ogSquare.id):null;
+        let pieceName = (ogSquare !== null) ? pieceNameFromId(ogSquare.id) : null;
 
-        if (pieceName!==null && pieceName.indexOf('ricochet') ===0 && specialCase){
+        if (pieceName !== null && pieceName.indexOf('ricochet') === 0 && specialCase) {
             let piece1 = selectedSquare.children[0];
 
             movePiece(ogSquare.children[0], selectedSquare.id);
@@ -320,7 +397,7 @@ function handleClick(e) {
             pauseTimer(turn);
             establishTurn();
         }
-        else{
+        else {
 
             selectSquare(selectedSquare);
             showMoveableSquares(selectedSquare);
@@ -438,11 +515,17 @@ That's it!!!
 */
 
 
-function establishTurn() {
+function establishTurn(undoing = false) {
     noMoves++;
     frozen = true;
     let waitTime = 2000, ogTurn = turn;
     if (noMoves === 0) waitTime = 0;
+
+    if (undoing) {
+        waitTime = 0;
+        noMoves -= 2;
+        gameOver = false;
+    }
 
     if (turn === 'red') turn = 'blue';
     else turn = 'red';
@@ -483,7 +566,7 @@ function establishTurn() {
         for (let piece of pieces) {
             if (piece.alt.indexOf('ricochet') !== -1) continue;
 
-            else if (piece.alt.indexOf('tank')!==-1){
+            else if (piece.alt.indexOf('tank') !== -1) {
                 if (turn === 'red') piece.classList.add('tank-rotateX');
                 else piece.classList.remove('tank-rotateX');
 
@@ -503,7 +586,7 @@ function establishTurn() {
 
     }, waitTime);
 
-    if (noMoves > 0) {
+    if (noMoves > 0 && !undoing) {
         //Temporary freeze all pieces:
 
         let pieces = document.querySelectorAll('.piece');
@@ -523,7 +606,24 @@ function capitalize(s) {
 }
 
 function endGame(winner = null) {
-    if (!winner) winner = turn;
+    // console.log('hi');
+    // if (method === 'titanDown'){
+    //     // The titan goes down only after 500ms
+    //     setTimeout(()=>{
+    //         for (let x in positions){
+    //             if (x === 'titanRed'){
+    //                 winner = 'blue'
+    //                 break;
+    //             }
+    //             if (x==='titanBlue'){
+    //                 winner = 'red';
+    //                 break;
+    //             }
+    //         }
+    //     }, 550);
+    // }
+
+    if (!winner) console.error('No winner provided');
     let text = document.querySelector('#winner');
     text.innerText = `${capitalize(winner)} WINS!!!`;
     text.classList.add(`${winner}-won`);
@@ -711,9 +811,11 @@ function moveBullet(bullet, direction, specialId = null) {
     let dirToDeg = { left: 270, top: 0, right: 90, bottom: 180 };
 
     if (hitPiece.indexOf('titan') !== -1) {
+        // console.log(hitPiece, hitPiece.slice(5), opponentOf(hitPiece.slice(5)));
         destroyPiece(divOfId(positions[hitPiece]));
-        endGame();
+        endGame(opponentOf(hitPiece.slice(5)));
     }
+    // hitPiece eg: tankBlue, titanRed, etc.
 
     else if (hitPiece.indexOf('sricochet') !== -1) {
         let div = document.querySelector(`#${positions[hitPiece]}`);
@@ -787,11 +889,11 @@ function moveBullet(bullet, direction, specialId = null) {
     }
 
     else if (hitPiece.indexOf('tank') !== -1) {
-        if (direction==='left'){
+        if (direction === 'left') {
             setTimeout(() => {
                 wooshSfx.play();
                 moveBullet(bullet, 'left', positions[hitPiece]);
-            }, movementTime*1000);
+            }, movementTime * 1000);
         }
         else setTimeout(() => canonHitsfx.play(), movementTime * 1000 - 50);
     }
@@ -818,7 +920,7 @@ function shootBullet() {
     setTimeout(() => {
         bullet.remove();
         bulletContainer.remove();
-    }, 1250);
+    }, 1900);
 
 }
 
@@ -897,4 +999,51 @@ pauseButton.addEventListener('click', () => {
     pauseTimer('blue');
 });
 
-//! Implement timeUp loss
+/*
+undo-redo system idea
+
+1.Each motion is written using a code
+(for time, maybe store time after each move in a list)
+
+(NameColorRotation) + ?from + ?to  + ?swapNameColor + ?destroyNameColorPosition
+where from and to are excluded for rotation | swapNameColor is the piece to be swapped with (ricochet) | destroyNameColor is the piece which was destroyed as a result of this move
+
+['titan': 'K', 'tank': 'T', 'canon': 'C', 'ricochet': 'R', 'sricochet': 'S', 'ricochet1': 'r']
+
+Color: B or R
+Change in Rotation: [1: 0, 2: 90, 3: -90]
+
+Eg: Move blue tank from g2 to g3
+s1 = TB1+g2+g3+
+So that s1.split() gives ['TB1', 'g2', 'g3', '']
+
+How to redo s1: (So we assume same initial position)
+    a. movePiece('tankBlue', 'g3')  
+
+How to undo s1:
+    movePiece('tankBlue', 'g2')
+
+Eg: Clkwise Rotate blue ricochet in e3
+s2 = RB2+++
+
+Eg: 
+
+
+*/
+
+function undo(move) {
+    move = move.split('+');
+    // const values = {'titan': 'K', 'tank': 'T', 'canon': 'C', 'ricochet': 'R', 'sricochet': 'S', 'ricochet1': 'r'}
+    const vals = { 'K': 'titan', 'T': 'tank', 'C': 'canon', 'R': 'ricochet', 'r': 'ricochet1', 'S': 'sricochet' }
+    let from = move[1], to = move[2];
+    let piece = divOfId(to).children[0];
+    //piece is the image
+    console.log(move);
+    movePiece(piece, from);
+    pauseTimer(turn);
+    establishTurn(true);
+    //Handle plain movement of a piece:
+    // 1. move back the piece 
+    // !2. Handle timer (note that establishTurn has function resumeTimer(turn);)
+    //3. Handle establishTurn();
+}
