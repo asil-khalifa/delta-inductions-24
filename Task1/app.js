@@ -22,6 +22,13 @@ let mouseClickSfx = new Audio('audio/mouse-click.mp3');
 let timerOverSfx = new Audio('audio/timer-alarm.mp3');
 let wooshSfx = new Audio('audio/woosh.mp3');
 
+let timings = [], moves = [];
+let undoButton = document.querySelector('#undo'), redoButton = document.querySelector('#redo');
+//Format of each element of timings:
+// {cs: {red: , blue: }, s: {red: , blue: }, m: {red: , blue: }}
+let texts = [];
+let movesHistory = document.querySelector('#moves-history');
+
 const moveableSquares = [];
 const positions = {
     'titanBlue': '',
@@ -126,6 +133,7 @@ function addTiles() {
 }
 
 function createPiece(type, Alt = null) {
+    //ACCEPTS PIECENAME LIKE 'sriccohetBlue' RETURNS IMG
     let piece = document.createElement('img');
     piece.src = `images/${type}.png`;
     piece.alt = (Alt) ? Alt : type;
@@ -138,10 +146,10 @@ function createPiece(type, Alt = null) {
 }
 
 function movePiece(piece, to) {
-    // let initPos = positions[piece.alt];
+    //Piece is the IMAGE
+
     let square = document.querySelector(`#${to}`);
     square.append(piece);
-
     positions[piece.alt] = to;
 }
 
@@ -289,7 +297,7 @@ function setBoard(preset = null) {
     turn = 'red';
     noMoves = -1;
 
-    establishTurn(); //Makes it blues turn
+    establishTurn(undoing = false, redoing = false); //Makes it blues turn
 }
 
 setBoard();
@@ -301,6 +309,10 @@ resetButton.addEventListener('click', () => {
     let loading = document.querySelector('#loading');
     loading.innerText = 'LOADING...';
     frozen = true;
+    moves = [];
+    timings = [];
+    texts = [];
+    movesHistory.innerText = '';
     resetTimer();
 
     setTimeout(() => {
@@ -360,7 +372,22 @@ function handleClick(e) {
             //Earlier user clicked on a piece
             movePiece(ogSquare.children[0], e.target.id);
             pauseTimer(turn);
-            establishTurn();
+
+            if (!e.detail.redoing){
+                moves = moves.slice(0, noMoves);
+                moves.push(`0+${ogSquare.id}+${e.target.id}++`);
+                registerTime();
+                establishTurn(undoing = false, redoing = false);
+                // bullet motion takes max 1s (5 bounces), board change of turn name takes 2s
+                setTimeout(()=>{
+                    updateTexts();
+                }, 1500);
+            }
+            
+            else{
+                
+                establishTurn(undoing=false, redoing=true);
+            }
         }
         removeMoveableSquares();
         toggleAllowRotation(selectedSquare);
@@ -395,7 +422,20 @@ function handleClick(e) {
             movePiece(ogSquare.children[0], selectedSquare.id);
             movePiece(piece1, ogSquare.id);
             pauseTimer(turn);
-            establishTurn();
+
+            if (!e.detail.redoing){
+                //Normal: not redoing
+                moves = moves.slice(0, noMoves);
+                moves.push(`0+${ogSquare.id}+${selectedSquare.id}+swap+`);
+                setTimeout(()=>{
+                    updateTexts();
+                }, 1500);
+
+                registerTime();
+                establishTurn(undoing = false, redoing = false);
+            }
+            //Redoing:
+            else establishTurn(undoing = false, redoing = true);
         }
         else {
 
@@ -470,22 +510,49 @@ lrotate.addEventListener('click', rotate);
 rrotate.addEventListener('click', rotate);
 
 function rotate(event) {
+    let redoing;
+    // console.log(event.detail.redoing);
+    if (event.detail.redoing){
+        redoing = true;
+    }
     if (selectedSquare !== null && selectedSquare.children.length > 0) {
+
+        moves = moves.slice(0, noMoves);
+
         let img = selectedSquare.children[0];
         let altText = img.alt;
         if (altText.indexOf('ricochet') === -1) return;
         if (altText.indexOf('sricochet') !== -1) {
             img.classList.remove(`sricochet-${rotations[altText]}`);
-            if (event.target.classList.contains('left') || event.target.parentElement.classList.contains('left')) rotations[altText] += 270;
-            else rotations[altText] += 90;
+
+            if (event.target.classList.contains('left') || event.target.parentElement.classList.contains('left')){
+                rotations[altText] += 270;
+
+                if (!redoing) moves.push(`2+${selectedSquare.id}+++`);
+            }
+            else{
+                rotations[altText] += 90;
+
+                if (!redoing) moves.push(`1+${selectedSquare.id}+++`);
+            }
+
             rotations[altText] %= 360;
             img.classList.add(`sricochet-${rotations[altText]}`);
         }
         else {
             img.classList.toggle('ricochet-90');
+            moves.push(`1+${selectedSquare.id}+++`);
         }
         pauseTimer(turn);
-        establishTurn();
+        
+        if (!redoing){
+            setTimeout(()=>{
+                updateTexts();
+            }, 1500);
+            registerTime();
+            establishTurn(undoing = false, redoing = false);
+        }
+        else establishTurn(undoing = false, redoing = true);
     }
 }
 
@@ -515,7 +582,7 @@ That's it!!!
 */
 
 
-function establishTurn(undoing = false) {
+function establishTurn(undoing = false, redoing = false) {
     noMoves++;
     frozen = true;
     let waitTime = 2000, ogTurn = turn;
@@ -524,7 +591,6 @@ function establishTurn(undoing = false) {
     if (undoing) {
         waitTime = 0;
         noMoves -= 2;
-        gameOver = false;
     }
 
     if (turn === 'red') turn = 'blue';
@@ -596,8 +662,9 @@ function establishTurn(undoing = false) {
             piece.parentElement.classList.add('block-piece');
         }
 
-        shootBullet();
+        shootBullet(redoing = redoing);
     }
+
 
 }
 
@@ -606,22 +673,6 @@ function capitalize(s) {
 }
 
 function endGame(winner = null) {
-    // console.log('hi');
-    // if (method === 'titanDown'){
-    //     // The titan goes down only after 500ms
-    //     setTimeout(()=>{
-    //         for (let x in positions){
-    //             if (x === 'titanRed'){
-    //                 winner = 'blue'
-    //                 break;
-    //             }
-    //             if (x==='titanBlue'){
-    //                 winner = 'red';
-    //                 break;
-    //             }
-    //         }
-    //     }, 550);
-    // }
 
     if (!winner) console.error('No winner provided');
     let text = document.querySelector('#winner');
@@ -777,7 +828,7 @@ function move(bullet, direction, blocks, duration) {
 
 }
 
-function moveBullet(bullet, direction, specialId = null) {
+function moveBullet(bullet, direction, specialId = null, redoing = false) {
 
 
     let neighbours, movementTime = .2;
@@ -811,9 +862,10 @@ function moveBullet(bullet, direction, specialId = null) {
     let dirToDeg = { left: 270, top: 0, right: 90, bottom: 180 };
 
     if (hitPiece.indexOf('titan') !== -1) {
-        // console.log(hitPiece, hitPiece.slice(5), opponentOf(hitPiece.slice(5)));
+        if (!redoing) moves[moves.length - 1] +=  `${hitPiece}-${positions[hitPiece]}`;
         destroyPiece(divOfId(positions[hitPiece]));
         endGame(opponentOf(hitPiece.slice(5)));
+        saveGame();
     }
     // hitPiece eg: tankBlue, titanRed, etc.
 
@@ -847,8 +899,12 @@ function moveBullet(bullet, direction, specialId = null) {
                 bullet.classList.add(`bullet-${dirToDeg[changedDirection[direction]]}deg`);
                 moveBullet(bullet, changedDirection[direction], id);
             }
-            else destroyPiece(divOfId(id));
-            //!destroy piece
+            else{
+                if (!redoing){
+                    moves[moves.length - 1] +=  `${hitPiece}-${positions[hitPiece]}`;
+                }
+                destroyPiece(divOfId(id));
+            }
 
         }, movementTime * 1000);
     }
@@ -900,7 +956,7 @@ function moveBullet(bullet, direction, specialId = null) {
 
 }
 
-function shootBullet() {
+function shootBullet(redoing = false) {
     let [bullet, bulletContainer] = createBullet();
 
     bullet.style.top = ((1 / 16) * parseInt(containerWidth) - (1 / 2) * parseInt(bullet.style.width)) + 'px';
@@ -910,8 +966,8 @@ function shootBullet() {
 
     bulletLaunchsfx.play();
     setTimeout(() => {
-        if (turn === 'blue') moveBullet(bullet, 'bottom');
-        else moveBullet(bullet, 'top');
+        if (turn === 'blue') moveBullet(bullet, 'bottom', null, redoing = redoing);
+        else moveBullet(bullet, 'top', null, redoing = redoing);
 
     }, 1);
     //Note: The max time moveBullet() could take to execute is about
@@ -945,21 +1001,30 @@ function pauseTimer(color) {
     if (color === 'red') clearInterval(redTimerId);
     else clearInterval(blueTimerId);
 }
+//Format of each element of timings:
+// {cs: {red: , blue: }, s: {red: , blue: }, m: {red: , blue: }}
 
-function resetTimer() {
+function resetTimer(timing) {
+    let finalTiming = {cs: {red: 0, blue:0}, s:{red: timerInitialSeconds, blue: timerInitialSeconds}, m: {red: timerInitialMinutes, blue: timerInitialMinutes}};
+    if (timing) finalTiming = timing;
+
     clearInterval(redTimerId);
     clearInterval(blueTimerId);
-    centiseconds.red = centiseconds.blue = 0;
-    seconds.red = seconds.blue = timerInitialSeconds;
-    minutes.red = minutes.blue = timerInitialMinutes;
-    blueTimer.children[0].innerText = `${timerInitialMinutes}:`;
-    blueTimer.children[1].innerText = timerInitialSeconds > 9 ? `${timerInitialSeconds}` : `0${timerInitialSeconds}`;
-    redTimer.children[0].innerText = `${timerInitialMinutes}:`;
-    redTimer.children[1].innerText = timerInitialSeconds > 9 ? `${timerInitialSeconds}` : `0${timerInitialSeconds}`;
+
+    centiseconds.red = finalTiming.cs.red;
+    centiseconds.blue = finalTiming.cs.blue;
+    seconds.red = finalTiming.s.red;
+    seconds.blue = finalTiming.s.blue;
+    minutes.red = finalTiming.m.red;
+    minutes.blue = finalTiming.m.blue;
+
+    blueTimer.children[0].innerText = `${minutes.blue}:`;
+    blueTimer.children[1].innerText = seconds.blue > 9 ? `${seconds.blue}` : `0${seconds.blue}`;
+    redTimer.children[0].innerText = `${minutes.red}:`;
+    redTimer.children[1].innerText = seconds.red > 9 ? `${seconds.red}` : `0${seconds.red}`;
 }
 
 function updateTimer(color) {
-    // console.log('I am here', color);
 
     let whichTimer;
     if (color === 'blue') whichTimer = blueTimer;
@@ -986,6 +1051,10 @@ function updateTimer(color) {
     whichTimer.children[0].innerText = `${minutes[color]}:`;
     whichTimer.children[1].innerText = (seconds[color] > 9) ? seconds[color] : `0${seconds[color]}`;
 
+}
+
+function registerTime(){
+    timings.push({cs:{red: centiseconds.red, blue: centiseconds.blue}, s: {red: seconds.red, blue: seconds.blue}, m: {red: minutes.red, blue: minutes.blue}});
 }
 
 let resumeButton = document.querySelector('#resume'), pauseButton = document.querySelector('#pause');
@@ -1026,24 +1095,215 @@ How to undo s1:
 Eg: Clkwise Rotate blue ricochet in e3
 s2 = RB2+++
 
-Eg: 
-
 
 */
 
-function undo(move) {
-    move = move.split('+');
-    // const values = {'titan': 'K', 'tank': 'T', 'canon': 'C', 'ricochet': 'R', 'sricochet': 'S', 'ricochet1': 'r'}
-    const vals = { 'K': 'titan', 'T': 'tank', 'C': 'canon', 'R': 'ricochet', 'r': 'ricochet1', 'S': 'sricochet' }
-    let from = move[1], to = move[2];
-    let piece = divOfId(to).children[0];
-    //piece is the image
-    console.log(move);
-    movePiece(piece, from);
+// function undo(move) {
+    //     move = move.split('+');
+    //     // const values = {'titan': 'K', 'tank': 'T', 'canon': 'C', 'ricochet': 'R', 'sricochet': 'S', 'ricochet1': 'r'}
+    //     const vals = { 'K': 'titan', 'T': 'tank', 'C': 'canon', 'R': 'ricochet', 'r': 'ricochet1', 'S': 'sricochet' }
+    //     let from = move[1], to = move[2];
+    //     let piece = divOfId(to).children[0];
+    //     //piece is the image
+    //     console.log(move);
+    //     movePiece(piece, from);
+    //     pauseTimer(turn);
+    //     establishTurn(true);
+    //     //Handle plain movement of a piece:
+    //     // 1. move back the piece 
+    //     // !2. Handle timer (note that establishTurn has function resumeTimer(turn);)
+    //     //3. Handle establishTurn();
+    // }
+    
+    // new:
+    // . Rotation + from + ?to  + ?swap + ?destroyNameColor-Position
+//move = [rotation, from, to, swap, destroy]
+//! from is compulsory
+// Rotation: [0:0, 1: 90, 2: -90]
+//swap is left empty for no swap, and any truthy value for swap
+//format for destroy: Eg: titanRed-g3, sricochetBlue-a4
+
+function undo(moveNo){
+    if (moveNo===0) return false;
+    moveNo--; // To get the index
+    let move = moves[moveNo];
+    let [rotation, from, to, swap, destroy] = move.split('+');
+
+    if (destroy){
+        let [piece, id] = destroy.split('-');
+        let img = createPiece(piece);
+        movePiece(img, id);
+        if (piece.indexOf('sricochet')!==-1){
+            //As the rotations list isn't modified when a piece is destroyed
+            img.classList.add(`sricochet-${rotations[piece]}`);
+        }
+    }
+
+    if (rotation=== '0'){
+        //Movement
+        let piece = divOfId(to).children[0], swapPiece;
+
+        if (swap) {
+            swapPiece = divOfId(from).children[0];
+        }
+
+        movePiece(piece, from);
+
+        if (swap) movePiece(swapPiece, to);
+    }
+    
+    else{
+        //Rotation
+        let img = divOfId(from).children[0];
+        let piece = img.alt, isSricochet=false;
+
+        if (piece.indexOf('sricochet')!==-1) isSricochet = true;
+
+        if (isSricochet){
+            img.classList.remove(`sricochet-${rotations[piece]}`);
+        
+
+            if (rotation === '1'){
+                rotations[piece] += 270;
+            }
+
+            else if (rotation === '2'){
+                rotations[piece] += 90;
+            }
+            rotations[piece] %= 360;
+
+            img.classList.add(`sricochet-${rotations[piece]}`);
+        }
+
+        else{
+            img.classList.toggle('ricochet-90');
+        }
+
+    }
+
+    let timing = timings[moveNo];
     pauseTimer(turn);
-    establishTurn(true);
-    //Handle plain movement of a piece:
-    // 1. move back the piece 
-    // !2. Handle timer (note that establishTurn has function resumeTimer(turn);)
-    //3. Handle establishTurn();
+    resetTimer(timing);
+
+    
+    establishTurn(undoing = true, redoing = false);
+
+    if (gameOver){
+        frozen = false;
+        gameOver = false;
+        let text = document.querySelector('#winner');
+        text.innerText = '';
+        text.classList.remove(`red-won`);
+        text.classList.remove(`blue-won`);
+    }
+}
+
+undoButton.addEventListener('click', ()=>{
+    if (!frozen ||gameOver) undo(noMoves);
+});
+
+
+function redo(){
+    
+    let moveNo = noMoves;
+    if (moveNo === moves.length){
+        return false;
+    }
+
+    let move = moves[moveNo];
+    let [rotation, from, to, swap, destroy] = move.split('+');
+    
+    let fromDiv = divOfId(from);
+    let clickEvent = new CustomEvent('click', {bubbles: true, detail: {redoing: true}});
+    fromDiv.dispatchEvent(clickEvent);
+
+    if (rotation === '0'){
+        let toDiv = divOfId(to);
+        toDiv.dispatchEvent(clickEvent);
+    }
+    else{
+        if (rotation === '1') rrotate.dispatchEvent(clickEvent);
+        else if (rotation === '2') lrotate.dispatchEvent(clickEvent);
+    }
+    
+}
+
+redoButton.addEventListener('click', ()=>{
+    if (!frozen || gameOver) redo();
+});
+
+// . Rotation + from + ?to  + ?swap + ?destroyNameColor-Position
+//Format of each element of timings:
+// {cs: {red: , blue: }, s: {red: , blue: }, m: {red: , blue: }}
+
+// timings = [{cs: {red: 30, blue: 90}, s: {red : 35, blue: 49}, m: {red: 3, blue: 3}}]
+
+function moveToText(move){
+    // Function works when called immediately after move
+
+    let [rotation, from, to, swap, destroy] = move.split('+');
+
+    let text = '', destroyedText = '', fromDiv = divOfId(from), toDiv = null, fromName = pieceNameFromId(from), toName = null, destroyedName = null, destroyedId = null;
+    //fromName is '' if no piece in from
+    // toName and toDiv are null if no to provided
+    // If to provided, no piece in to, toName is ''
+
+    if (to){
+        toDiv = divOfId(to);
+        toName = pieceNameFromId(to);
+    }
+
+    if (destroy){
+        [destroyedName, destroyedId] = destroy.split('-');
+        if (destroyedId === from) fromName = destroyedName;
+        else if (destroyedId === to) toName = destroyedName;
+        destroyedText = ` and destroyed ${destroyedName} in ${destroyedId}`;
+    }
+
+    if (rotation === '0'){
+        if (swap) text = `swapped ${toName} in ${from} with ${fromName} in ${to}`;
+        else{
+            text = `moved ${toName} from ${from} to ${to}`;
+        }
+    }
+    else if (rotation === '1'){
+        text = `rotated ${fromName} in ${from} clockwise`;
+    }
+    else if (rotation === '2'){
+        text = `rotated ${fromName} in ${from} anti-clockwise`;
+    }
+
+    return text+destroyedText;
+}
+
+// function t(index){
+//     console.log(moveToText(moves[index]));
+// }
+
+function updateTexts(){
+    texts  = texts.slice(0, noMoves-1); 
+    //-1 because func called 1.5 seconds after, so establish turn has incremented noMoves 
+
+    texts.push(String(noMoves)+'. '+opponentOf(turn)+' '+moveToText(moves[moves.length-1]));
+    
+    movesHistory.innerHTML = texts[0];
+    for (let i = 1; i<texts.length; i++){
+        movesHistory.innerHTML += '<br>'+texts[i];
+    }
+
+}
+
+function saveGame(){
+    let game;
+    if (localStorage.getItem('gameNo') === null){
+        localStorage.setItem('gameNo', '1');
+        game = 'game1';
+    }
+    else{
+        game = String(parseInt(localStorage.getItem('gameNo'))+1)
+        localStorage.setItem('gameNo', game);
+        game = 'game'+game;
+    }
+    localStorage.setItem(game, JSON.stringify({moves: moves, timings: timings, texts: texts, noMoves: noMoves}));
+
 }
