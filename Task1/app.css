@@ -140,11 +140,23 @@ body {
     color: #3f48cd;
 }
 
+#undo-redo-box *{
+    margin: .5%;
+}
+
+#moves-history{
+    display: inline-block;
+    height: 50%;
+    width: 55%;
+    overflow: scroll;
+}
+
 #message {
     /* flex-basis: 25%; */
     display: flex;
-    flex-basis: 20%;
-    height: auto;
+    flex-basis: 50px;
+    /* height: auto; */
+    /* height: 50px; */
 }
 
 #message div {
@@ -169,9 +181,6 @@ body {
      height: 80%;
 } */
 
-/* #timer{
-    
-} */
 
 
 #container {
@@ -335,3 +344,4 @@ body {
 .tank-rotateX {
     transform: rotateX(180deg) translate(10%, -10%);
 }
+
