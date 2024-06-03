@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Richochet Rumble</title>
+    <title>Ricochet Rumble</title>
     <link rel="stylesheet" href="app.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -44,14 +44,17 @@
                 <span id="minutes">5:</span><span id="seconds"></span>
             </div>
         </div>
-
+        <div id="undo-redo-box">
+            <button id="undo" class="time-button">UNDO</button>
+            <button id="redo" class="time-button">REDO</button>
+            <div id="moves-history"></div>
+        </div>
         <div>
             <h3 id="loading"></h3>
             <h2 id="winner"></h2>
 
         </div>
 
-        <div id="timer"></div>
     </div>
 
     <script src="app.js"></script>
