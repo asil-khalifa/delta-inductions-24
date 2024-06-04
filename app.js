@@ -109,6 +109,18 @@ function setContainerSize() {
         x.style.height = rotateButtonSide + 'px';
     }
 
+    if (vw<500){
+        for (let x of timeSettings.children){
+            x.classList.remove('time-buttons-font-size-big');
+            x.classList.add('time-buttons-font-size-small');
+        }
+    }
+    else{
+        for (let x of timeSettings.children){
+            x.classList.add('time-buttons-font-size-big');
+            x.classList.remove('time-buttons-font-size-small');
+        }
+    }
 
     timeSettings.style.height = .9 * rotateButtonSide + 'px';
     containerWidth = container.style.width;
