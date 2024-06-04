@@ -104,7 +104,7 @@ body {
     display: flex;
     justify-content: space-between;
     /* flex-wrap: wrap; */
-    flex-shrink: 1;
+    /* flex-shrink: 1; */
 }
 
 #time-settings * {
@@ -112,8 +112,14 @@ body {
 
     font-family: "Orbitron", sans-serif;
     font-weight: 750;
-    font-size: 1.85vh;
+    /*1.85vh*/
+}
 
+.time-buttons-font-size-big{
+    font-size: 1.85vh; 
+}
+.time-buttons-font-size-small{
+    font-size: 9px; 
 }
 
 #resume {
